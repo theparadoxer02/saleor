@@ -402,8 +402,8 @@ def test_generate_product_variant_translation_payload(variant_translation_fr):
     assert translation_keys["name"] == variant_translation_fr.name
 
 
-def test_generate_collection_point_payload(order_with_lines_cc):
-    payload = json.loads(generate_order_payload(order_with_lines_cc))[0]
+def test_generate_collection_point_payload(order_with_lines_for_cc):
+    payload = json.loads(generate_order_payload(order_with_lines_for_cc))[0]
 
     payload_collection_point = payload.get("collection_point")
 
