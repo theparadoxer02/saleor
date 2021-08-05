@@ -1054,7 +1054,7 @@ class CheckoutShippingMethodUpdate(BaseMutation):
 
 
 class CheckoutDeliveryMethodUpdate(BaseMutation):
-    checkout = graphene.Field(Checkout, description="An updated checkout")
+    checkout = graphene.Field(Checkout, description="An updated checkout.")
 
     class Arguments:
         token = UUID(description="Checkout token.", required=False)
@@ -1085,17 +1085,15 @@ class CheckoutDeliveryMethodUpdate(BaseMutation):
             ),
         )
 
-        CheckoutDeliveryMethodUpdate._check_delivery_method(
+        cls._check_delivery_method(
             checkout_info, lines, shipping_method=shipping_method, collection_point=None
         )
 
-        checkout_delivery_method_update = (
-            CheckoutDeliveryMethodUpdate._update_delivery_method(
-                manager,
-                checkout,
-                shipping_method=shipping_method,
-                collection_point=None,
-            )
+        checkout_delivery_method_update = cls._update_delivery_method(
+            manager,
+            checkout,
+            shipping_method=shipping_method,
+            collection_point=None,
         )
         recalculate_checkout_discount(
             manager, checkout_info, lines, info.context.discounts
@@ -1119,7 +1117,7 @@ class CheckoutDeliveryMethodUpdate(BaseMutation):
             shipping_method=None,
             collection_point=collection_point,
         )
-        return CheckoutDeliveryMethodUpdate._update_delivery_method(
+        return cls._update_delivery_method(
             manager, checkout, shipping_method=None, collection_point=collection_point
         )
 
@@ -1146,7 +1144,7 @@ class CheckoutDeliveryMethodUpdate(BaseMutation):
                 {
                     "delivery_method": ValidationError(
                         error_msg,
-                        code=CheckoutErrorCode.SHIPPING_METHOD_NOT_APPLICABLE.value,
+                        code=CheckoutErrorCode.DELIVERY_METHOD_NOT_APPLICABLE.value,
                     )
                 }
             )
