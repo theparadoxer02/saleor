@@ -3,8 +3,10 @@ from typing import DefaultDict, Iterable, List, Optional, Tuple
 from uuid import UUID
 
 from django.conf import settings
+from django.db.models import Exists, OuterRef, Q
 
-from ...warehouse.models import Stock, Warehouse
+from ...channel.models import Channel
+from ...warehouse.models import ShippingZone, Stock, Warehouse
 from ..account.dataloaders import AddressByIdLoader
 from ..channel.dataloaders import ChannelBySlugLoader
 from ..core.dataloaders import DataLoader
@@ -62,13 +64,42 @@ class AvailableQuantityByProductVariantIdCountryCodeAndChannelSlugLoader(
         # get stocks only for warehouses assigned to the shipping zones
         # that are available in the given channel
         stocks = Stock.objects.filter(product_variant_id__in=variant_ids)
-        if country_code:
+        if country_code or channel_slug:
+            WarehouseShippingZone = Warehouse.shipping_zones.through  # type: ignore
+            query = Q()
+            if country_code:
+                shipping_zones = ShippingZone.objects.filter(
+                    countries__contains=country_code
+                ).values("pk")
+                query.add(
+                    Q(Exists(shipping_zones.filter(pk=OuterRef("shippingzone_id")))),
+                    Q.OR,
+                )
+            if channel_slug:
+                ShippingZoneChannel = Channel.shipping_zones.through  # type: ignore
+                channels = Channel.objects.filter(slug=channel_slug).values("pk")
+                shipping_zone_channels = ShippingZoneChannel.objects.filter(
+                    Exists(channels.filter(pk=OuterRef("channel_id")))
+                ).values("shippingzone_id")
+                query.add(
+                    Q(
+                        Exists(
+                            shipping_zone_channels.filter(
+                                shippingzone_id=OuterRef("shippingzone_id")
+                            )
+                        )
+                    ),
+                    Q.OR,
+                )
+            warehouse_shipping_zones = WarehouseShippingZone.objects.filter(
+                query
+            ).values("warehouse_id")
             stocks = stocks.filter(
-                warehouse__shipping_zones__countries__contains=country_code
-            )
-        if channel_slug:
-            stocks = stocks.filter(
-                warehouse__shipping_zones__channels__slug=channel_slug
+                Exists(
+                    warehouse_shipping_zones.filter(
+                        warehouse_id=OuterRef("warehouse_id")
+                    )
+                )
             )
         stocks = stocks.annotate_available_quantity()
         stocks = stocks.values_list(
