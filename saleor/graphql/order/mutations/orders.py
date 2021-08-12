@@ -299,6 +299,8 @@ class OrderUpdateShipping(EditableOrderValidationMixin, BaseMutation):
                         )
                     }
                 )
+
+            # Shipping method is detached only when null is passed in input.
             if data["shipping_method"] == "":
                 raise ValidationError(
                     {
